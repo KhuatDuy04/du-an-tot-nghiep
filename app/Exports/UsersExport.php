@@ -39,7 +39,6 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             'Ngày sinh',
             'Mô tả',
             'Email',
-            'Mật khẩu',
             'Loại',
         ];
     }
@@ -47,18 +46,20 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, WithStyl
     // Ánh xạ dữ liệu của từng hàng
     public function map($user): array
     {
+        static $counter = 1; // Khởi tạo bộ đếm STT
+
         return [
-            $user->id,
+            $counter++, // STT tự tăng
             $user->name,
             $user->phone,
             $user->address,
             $user->birth,
             $user->description,
             $user->email,
-            $user->password,
             $user->type,
         ];
     }
+
 
     // Định dạng các cột trong bảng
     public function styles($sheet)

@@ -139,7 +139,7 @@
                         <div class="col-lg-12">
                             <div class="card">
                                 <div class="card-body">
-                                    <div class="row mb-3">
+                                    <div class="row mb-3 d-none">
                                         <div class="col-6">
                                             <label for="start-date">Ngày bắt đầu:</label>
                                             <input type="date" id="start-date" class="form-control" />
@@ -301,7 +301,7 @@
                         text: 'Sao chép',
                         exportOptions: {
                             columns: function(idx, data, node) {
-                                return idx !== 4; // Ẩn cột "Thao tác"
+                                return idx !== 3; // Ẩn cột "Thao tác"
                             }
                         }
                     },
@@ -310,7 +310,7 @@
                         text: 'Xuất CSV',
                         exportOptions: {
                             columns: function(idx, data, node) {
-                                return idx !== 4; // Ẩn cột "Thao tác"
+                                return idx !== 3; // Ẩn cột "Thao tác"
                             }
                         }
                     },
@@ -319,7 +319,7 @@
                         text: 'Xuất Excel',
                         exportOptions: {
                             columns: function(idx, data, node) {
-                                return idx !== 4; // Ẩn cột "Thao tác"
+                                return idx !== 3; // Ẩn cột "Thao tác"
                             }
                         }
                     },
@@ -328,7 +328,7 @@
                         text: 'Xuất PDF',
                         exportOptions: {
                             columns: function(idx, data, node) {
-                                return idx !== 4; // Ẩn cột "Thao tác"
+                                return idx !== 3; // Ẩn cột "Thao tác"
                             }
                         }
                     },
@@ -337,7 +337,7 @@
                         text: 'In',
                         exportOptions: {
                             columns: function(idx, data, node) {
-                                return idx !== 4; // Ẩn cột "Thao tác"
+                                return idx !== 3; // Ẩn cột "Thao tác"
                             }
                         }
                     }

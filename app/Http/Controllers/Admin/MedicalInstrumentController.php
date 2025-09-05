@@ -143,9 +143,17 @@ class MedicalInstrumentController extends Controller
             $quantities = $request->so_luong;
 
             $total_quantity = 1;
-
-            foreach ($units as $i => $unit) {
-                $total_quantity *= $quantities[$i];
+            
+            if(count($units) === 1) {
+                $total_quantity = $quantities[0];
+            }else {
+                foreach ($units as $i => $unit) {
+                    if ($i == 0) {
+                        continue;
+                    }
+    
+                    $total_quantity *= $quantities[$i];
+                }
             }
             
             $price_in_smallest_unit = $request->batch['price_sale'] / $total_quantity;
@@ -235,6 +243,17 @@ class MedicalInstrumentController extends Controller
             $medicineData = $request->medicine;
             $medicine->update($medicineData);
 
+            $batches = $request->batches;
+            foreach ($batches as $batchId => $data) {
+                $batch = Batch::find($batchId);
+                
+                if ($batch) {
+                    $batch->update([
+                        'price_in_smallest_unit' => $data['price_in_smallest_unit']
+                    ]);
+                }
+            }
+
             DB::commit();
 
             return redirect()->route('admin.medicalInstruments.index')->with('success', 'Cập nhật thành công');
@@ -250,6 +269,15 @@ class MedicalInstrumentController extends Controller
      */
     public function destroy(Medicine $medicalInstrument)
     {
+        if (
+            $medicalInstrument->cut_dose_order_details()->exists() ||
+            $medicalInstrument->prescription_details()->exists() ||
+            $medicalInstrument->import_order_details()->exists() ||
+            $medicalInstrument->cut_dose_prescription_details()->exists()
+        ) {
+            return back()->with('error', 'Không thể xóa dụng cụ vì có dữ liệu liên quan.');
+        }
+
         $medicalInstrument->delete();
         return back()->with('success', 'Xóa dụng cụ thành công');
     }

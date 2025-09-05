@@ -43,7 +43,7 @@ Danh sách đơn thuốc
                         </div>
                         <div class="col-sm-auto">
                             <div class="d-flex flex-wrap align-items-start gap-2">
-                                <a href="{{ route('admin.prescriptions.create') }}" class="btn btn-success add-btn">
+                                <a href="{{ route('admin.sell.index') }}" class="btn btn-success add-btn">
                                     <i class="ri-add-line align-bottom me-1"></i> Thêm mới
                                 </a>
                             </div>
@@ -70,7 +70,6 @@ Danh sách đơn thuốc
                             <tr>
                                 <th>STT</th>
                                 <th>Tên khách hàng</th>
-                                <th>Giới tính</th>
                                 <th>Ngày mua</th>
                                 <th>Tổng đơn hàng</th>
                                 <th>Hành động</th>
@@ -130,7 +129,6 @@ Danh sách đơn thuốc
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'customer_name' },
-                    { data: 'gender' },
                     { data: 'created_at' },
                     { data: 'total_price' },
                     { data: 'action', orderable: false, searchable: false }
@@ -168,13 +166,13 @@ Danh sách đơn thuốc
 
                 let form = $(this).closest('.delete-form');
                 Swal.fire({
-                    title: "Bạn có chắc muốn xóa không?",
+                    title: "Bạn có chắc muốn hủy không?",
                     icon: "warning",
                     showCancelButton: true,
                     confirmButtonColor: "#d33",
                     cancelButtonColor: "#3085d6",
-                    confirmButtonText: "Xóa!",
-                    cancelButtonText: "Hủy",
+                    confirmButtonText: "Hủy",
+                    cancelButtonText: "Không",
                     reverseButtons: true
                 }).then((result) => {
                     if (result.isConfirmed) {

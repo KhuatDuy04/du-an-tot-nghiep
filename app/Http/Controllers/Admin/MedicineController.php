@@ -149,9 +149,17 @@ class MedicineController extends Controller
             $quantities = $request->so_luong;
 
             $total_quantity = 1;
-
-            foreach ($units as $i => $unit) {
-                $total_quantity *= $quantities[$i];
+            
+            if(count($units) === 1) {
+                $total_quantity = $quantities[0];
+            }else {
+                foreach ($units as $i => $unit) {
+                    if ($i == 0) {
+                        continue;
+                    }
+    
+                    $total_quantity *= $quantities[$i];
+                }
             }
             
             $price_in_smallest_unit = $request->batch['price_sale'] / $total_quantity;
@@ -215,7 +223,7 @@ class MedicineController extends Controller
      */
     public function edit(string $id)
     {
-        $medicine = Medicine::with(['category', 'unitConversions.unit'])->findOrFail($id);
+        $medicine = Medicine::with(['category', 'unitConversions.unit', 'batches.supplier','batches.storage', 'batches.inventory.unit'])->findOrFail($id);
         $packaging_specification = Batch::where('medicine_id', $id)->pluck('packaging_specification')->first();
         $categories = Category::all();
         $storages = Storage::all();
@@ -245,6 +253,17 @@ class MedicineController extends Controller
             $medicineData = $request->medicine;
             $medicine->update($medicineData);
 
+            $batches = $request->batches;
+            foreach ($batches as $batchId => $data) {
+                $batch = Batch::find($batchId);
+                
+                if ($batch) {
+                    $batch->update([
+                        'price_in_smallest_unit' => $data['price_in_smallest_unit']
+                    ]);
+                }
+            }
+
             DB::commit();
 
             return redirect()->route('admin.medicines.index')->with('success', 'Cập nhật thành công');
@@ -260,9 +279,23 @@ class MedicineController extends Controller
      */
     public function destroy(Medicine $medicine)
     {
+
+        if (
+            $medicine->cut_dose_order_details()->exists() ||
+            $medicine->prescription_details()->exists() ||
+            $medicine->import_order_details()->exists() ||
+            $medicine->cut_dose_prescription_details()->exists()
+        ) {
+            return back()->with('error', 'Không thể xóa thuốc vì có dữ liệu liên quan.');
+        }
+        
+    
         $medicine->delete();
-        return back()->with('success', 'Xóa thuốc thành công.');
+    
+        return back()->with('success', 'Xóa thành công.');
     }
+    
+
     public function getRestore()
     {
         $data = Medicine::onlyTrashed()->where('type_product', 0)->orderBy('deleted_at', 'desc')->paginate(5);

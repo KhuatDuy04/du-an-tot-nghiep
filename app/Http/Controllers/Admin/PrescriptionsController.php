@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Events\RevenueUpdated;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PrescriptionRequest;
 use App\Http\Requests\UpdatePrescriptionRequest;
+use App\Models\Batch;
 use App\Models\CutDosePrescription;
 use App\Models\Disease;
 use App\Models\Inventory;
@@ -44,9 +46,6 @@ class PrescriptionsController extends Controller
 
             return DataTables::of($data)
                 ->addIndexColumn()
-                ->addColumn('gender', function ($row) {
-                    return $row->gender == 0 ? 'Nam' : 'Nữ'; // Chuyển đổi giới tính
-                })
                 ->addColumn('total_price', function ($row) {
                     return number_format($row->total_price) . ' VND';  // Format price
                 })
@@ -57,11 +56,11 @@ class PrescriptionsController extends Controller
                     $deleteUrl = route('admin.prescriptions.destroy', $row->id);
                     return '
                         <a href="' . route('admin.prescriptions.show', $row->id) . '" class="btn btn-info">Xem</a>
-                        <a href="' . route('admin.prescriptions.edit', $row->id) . '" class="btn btn-warning">Sửa</a>
+                       
                         
                         <form action="' . $deleteUrl . '" method="post" style="display:inline;" class="delete-form">
                             ' . csrf_field() . method_field('DELETE') . '
-                            <button type="button" class="btn btn-danger btn-delete" data-id="' . $row->id . '">Xóa</button>
+                            <button type="button" class="btn btn-danger btn-delete" data-id="' . $row->id . '">Hủy</button>
                         </form>
                     ';
                 })
@@ -90,7 +89,7 @@ class PrescriptionsController extends Controller
     /**
      * Store a newly created resource in Prescription.
      */
-    public function store(Request $request)
+    public function store(PrescriptionRequest $request)
     {
         // Bắt đầu giao dịch
         DB::beginTransaction();
@@ -102,11 +101,11 @@ class PrescriptionsController extends Controller
 
             $prescription = Prescription::create([
                 'total_price' => $request->total_price,
-                'customer_name' => $request->customer_name,
+                'customer_name' => $request->customer_name_tt,
                 'shift_id' => $shiftId,
                 'seller' => Auth::user()->name,
                 'note' => $request->note,
-                'dosage' => $request->dosage
+                'dosage' => $request->dosage_tt
             ]);
 
             foreach ($request->unit_id as $key => $value) {
@@ -117,7 +116,7 @@ class PrescriptionsController extends Controller
                     'quantity' => $request->quantity[$key],
                     'current_price' => $request->batch_total_price[$key],
                 ]);
-                
+
                 $inventory = Inventory::where('batch_id', $key)->first();
                 $inventory->update([
                     'quantity' => $inventory->quantity - $request->quantity[$key],
@@ -136,7 +135,6 @@ class PrescriptionsController extends Controller
 
             // Redirect với thông báo thành công
             return redirect()->route('admin.sell.index')->with('success', 'Tạo đơn thuốc thành công');
-
         } catch (\Exception $e) {
             // Rollback transaction nếu có lỗi
             DB::rollBack();
@@ -150,7 +148,8 @@ class PrescriptionsController extends Controller
      */
     public function show(string $id)
     {
-        $prescription = Prescription::with(['prescriptionDetails.medicine', 'prescriptionDetails.unit'])->findOrFail($id);
+
+        $prescription = Prescription::with(['prescriptionDetails.batch', 'prescriptionDetails.unit'])->findOrFail($id);
 
         return view(self::PATH_VIEW . __FUNCTION__, compact('prescription'));
     }
@@ -206,9 +205,35 @@ class PrescriptionsController extends Controller
      */
     public function destroy(Prescription $prescription)
     {
+        $details = $prescription->prescriptionDetails;
+    
+        foreach ($details as $detail) {
+            $batch = Batch::find($detail->batch_id);
+            
+            if ($batch) {
+                $inventory = Inventory::where('batch_id', $detail->batch_id)
+                    ->where('unit_id', $detail->unit_id)  
+                    ->first();
+    
+                if ($inventory) {
+                    $inventory->quantity += $detail->quantity;
+                    $inventory->save(); 
+                }
+            }
+        }
+     
+        $shift = $prescription->shift; 
+        if ($shift) {
+            $shift->revenue_summary -= $prescription->total_price;
+            $shift->save();
+        }
         $prescription->delete();
-        return back()->with('success', 'Xóa thuốc thành công.');
+    
+        // Trả về với thông báo thành công
+        return back()->with('success', 'hủy đơn thuốc thành công và đã trả lại số lượng cho tồn kho.');
     }
+    
+
 
     public function getRestore()
     {
@@ -230,5 +255,4 @@ class PrescriptionsController extends Controller
             return back()->with('error', 'Khôi phục bản ghi thất bại.');
         }
     }
-
 }

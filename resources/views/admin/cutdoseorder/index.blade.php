@@ -38,7 +38,7 @@ Danh sách đơn thuốc cắt liều
                             <h5 class="card-title mb-0">Danh sách đơn thuốc cắt liều</h5>
                         </div>
                         <div class="col-sm-auto">
-                            <a href="{{ route('admin.cutDoseOrders.create') }}" class="btn btn-success add-btn">
+                            <a href="{{ route('admin.sell.index') }}" class="btn btn-success add-btn">
                                 <i class="ri-add-line align-bottom me-1"></i> Thêm mới
                             </a>
                         </div>
@@ -164,13 +164,13 @@ Danh sách đơn thuốc cắt liều
 
                 let form = $(this).closest('.delete-form');
                 Swal.fire({
-                    title: "Bạn có chắc muốn xóa không?",
+                    title: "Bạn có chắc muốn Hủy không?",
                     icon: "warning",
                     showCancelButton: true,
                     confirmButtonColor: "#d33",
                     cancelButtonColor: "#3085d6",
-                    confirmButtonText: "Xóa!",
-                    cancelButtonText: "Hủy",
+                    confirmButtonText: "Hủy",
+                    cancelButtonText: "Không",
                     reverseButtons: true
                 }).then((result) => {
                     if (result.isConfirmed) {

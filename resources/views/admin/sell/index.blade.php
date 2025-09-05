@@ -17,6 +17,16 @@
         @include('admin.layouts.partials.notification')
     @endif
 
+    @if ($errors->any())
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi khi bán',
+                text: 'Đã có lỗi khi bán. Vui lòng kiểm tra lại!',
+            })
+        </script>
+    @endif
+
     <div class="container mt-1">
         <div class="row mb-3 bg-white">
             <div class="col-12 d-flex justify-content-between align-items-center">
@@ -41,7 +51,7 @@
                     </ul>
                 </div>
                 <!-- Nút thoát -->
-                <a class="btn btn-warning" href="{{ route('admin.dashboard') }}">
+                <a class="btn btn-warning" href="{{ route('admin.prescriptions.index') }}">
                     <i class="fas fa-door-open fs-4"></i>
                 </a>
             </div>
@@ -87,27 +97,39 @@
                                 <select name="cutDosePrescription" id="cutDosePrescription" class="form-select select2 @error('cutDosePrescription') is-invalid @enderror">
                                     <option value="">Chọn mẫu đơn thuốc</option>
                                     @foreach ($cutDosePrescription as $prescription)
-                                        <option value="{{ $prescription['id'] }}" {{ old('cutDosePrescription') == $prescription['id'] ? 'selected' : '' }}>
+                                        <option value="{{ $prescription['id'] }}" >
                                             {{ $prescription['name'] }}
                                         </option>
                                     @endforeach
                                 </select>
+                                @error('cutDosePrescription')
+                                    <span class="d-block text-danger mt-2">{{ $message }}</span>
+                                @enderror
                             </div>
                             <ul class="list-group mb-3" id="cart">
                                 <!-- Sản phẩm trong giỏ hàng sẽ được thêm ở đây -->
                             </ul>
                             <div class="mb-3">
-                                <label for="customer-name" class="form-label">Tên khách hàng</label>
-                                <input type="text" class="form-control" id="customer-name" name="customer_name"
-                                    placeholder="Nhập tên khách hàng">
+                                <label for="customer-name" class="form-label">Tên khách hàng <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control @error('customer_name_tt') is-invalid @enderror" id="customer-name" name="customer_name_tt"
+                                    placeholder="Nhập tên khách hàng" value="{{ old('customer_name_tt') }}" required>
+                                @error('customer_name_tt')
+                                    <span class="d-block text-danger mt-2">{{ $message }}</span>
+                                @enderror
                             </div>
                             <div class="mb-3">
-                                <label for="dosage" class="form-label">Liều dùng</label>
-                                <textarea class="form-control" id="dosage" name="dosage" rows="3" placeholder="Nhập ghi chú"></textarea>
+                                <label for="dosage" class="form-label">Liều lượng <span class="text-danger">*</span></label>
+                                <textarea class="form-control @error('dosage_tt') is-invalid @enderror" id="dosage" name="dosage_tt" rows="3" placeholder="Nhập ghi chú" required>{{ old('dosage_tt') }}</textarea>
+                                @error('dosage_tt')
+                                    <span class="d-block text-danger mt-2">{{ $message }}</span>
+                                @enderror
                             </div>
                             <div class="mb-3">
                                 <label for="note" class="form-label">Ghi chú</label>
-                                <textarea class="form-control" id="note" name="note" rows="3" placeholder="Nhập ghi chú"></textarea>
+                                <textarea class="form-control @error('note') is-invalid @enderror" id="note" name="note" rows="3" placeholder="Nhập ghi chú">{{ old('note') }}</textarea>
+                                @error('note')
+                                    <span class="d-block text-danger mt-2">{{ $message }}</span>
+                                @enderror
                             </div>
                             <div class="detail mb-3" id="price-details">
                                 <!-- Chi tiết tiền từng loại thuốc -->
@@ -120,12 +142,10 @@
 
                             <div class="d-flex justify-content-between">
                                 <button class="btn btn-success w-100 mt-3 mb-2" type="submit"
-                                    id="checkout-button">Tiền mặt</button>
+                                    id="checkout-button">Bán hàng</button>
                             </div>
                         </form>
-                        <form action="">
-                            <button class="btn btn-primary w-100 mt-3 mb-2" id="checkout-button">QR code</button>
-                        </form>
+                        
                     </div>
                 </div>
             </div>
@@ -169,68 +189,97 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="customer-name-dose" class="form-label">Tên khách hàng <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="customer-name-dose" name="customer_name"
-                                        placeholder="Nhập tên khách hàng" required>
+                                    <input type="text" class="form-control @error('customer_name') is-invalid @enderror" id="customer-name-dose" name="customer_name"
+                                        placeholder="Nhập tên khách hàng" value="{{ old('customer_name') }}" >
+                                    @error('customer_name')
+                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="age-dose" class="form-label">Tuổi <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="age-dose" name="age"
-                                        placeholder="Nhập tuổi" required>
+                                    <input type="number" class="form-control @error('age') is-invalid @enderror" id="age-dose" name="age"
+                                        placeholder="Nhập tuổi" value="{{ old('age') }}" >
+                                    @error('age')
+                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="phone-dose" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="phone-dose" name="phone"
-                                        placeholder="Nhập số điện thoại" required>
+                                    <input type="number" class="form-control @error('phone') is-invalid @enderror" id="phone-dose" name="phone"
+                                        placeholder="Nhập số điện thoại" value="{{ old('phone') }}" >
+                                    @error('phone')
+                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="address-dose" class="form-label">Địa chỉ <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="address-dose" name="address"
-                                        placeholder="Nhập Địa chỉ" required>
+                                    <input type="text" class="form-control @error('address') is-invalid @enderror" id="address-dose" name="address"
+                                        placeholder="Nhập Địa chỉ" value="{{ old('address') }}" >
+                                    @error('address')
+                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="weight-dose" class="form-label">Cân nặng <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="weight-dose" name="weight"
-                                        placeholder="Nhập cân nặng" required>
+                                    <input type="number" class="form-control @error('weight') is-invalid @enderror" id="weight-dose" name="weight"
+                                        placeholder="Nhập cân nặng" value="{{ old('weight') }}" >
+                                    @error('weight')
+                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="email-dose" class="form-label">Email</label>
-                                    <input type="email" class="form-control" id="email-dose" name="email"
-                                        placeholder="Nhập email" required>
+                                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="email-dose" name="email"
+                                        placeholder="Nhập email" value="{{ old('email') }}" >
+                                    @error('email')
+                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="gender-dose" class="form-label">Giới tính <span class="text-danger">*</span></label><br>
                                     <div class="form-check form-check-inline ms-2">
-                                        <input class="form-check-input" type="radio" name="gender" id="gender-dose-male" value="0" required>
+                                        <input class="form-check-input @error('gender') is-invalid @enderror" type="radio" name="gender" id="gender-dose-male" value="0" required
+                                            {{ old('gender') == 0 ? 'checked' : '' }}>
                                         <label class="form-check-label" for="gender-dose-male">Nam</label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="gender" id="gender-dose-female" value="1" required>
+                                        <input class="form-check-input @error('gender') is-invalid @enderror" type="radio" name="gender" id="gender-dose-female" value="1" required
+                                            {{ old('gender') == 1 ? 'checked' : '' }}>
                                         <label class="form-check-label" for="gender-dose-female">Nữ</label>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="disisease" class="form-label">Chọn bệnh <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="disisease" name="disisease" required>
+                                    <select class="form-select @error('disisease') is-invalid @enderror" id="disisease" name="disisease" >
                                         <option value="">Chọn bệnh</option>
                                         @foreach ($disisease as $item)
-                                            <option value="{{ $item->id }}">{{ $item->disease_name }}</option>
+                                            <option value="{{ $item->id }}" {{ old('disisease') == $item->id ? 'selected' : '' }}>{{ $item->disease_name }}</option>
                                         @endforeach
                                     </select>
+                                    @error('disisease')
+                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="dosage" class="form-label">Liều dùng</label>
-                                <textarea class="form-control" id="dosage" name="dosage" rows="3" placeholder="Nhập ghi chú"></textarea>
+                                <label for="dosage" class="form-label">Liều lượng <span class="text-danger">*</span></label>
+                                <textarea class="form-control @error('dosage') is-invalid @enderror" id="dosage" name="dosage" rows="3" placeholder="Nhập ghi chú">{{ old('dosage') }}</textarea>
+                                @error('dosage')
+                                    <div class="text-danger mt-2">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="mb-3">
                                 <label for="note-dose" class="form-label">Ghi chú</label>
-                                <textarea class="form-control" id="note-dose" name="note" rows="3" placeholder="Nhập ghi chú"></textarea>
+                                <textarea class="form-control @error('note') is-invalid @enderror" id="note-dose" name="note" rows="3" placeholder="Nhập ghi chú">{{ old('note') }}</textarea>
+                                @error('note')
+                                    <div class="text-danger mt-2">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="detail mb-3" id="dose-price-details">
                                 <!-- Chi tiết tiền từng loại thuốc -->
@@ -243,12 +292,10 @@
 
                             <div class="d-flex justify-content-between">
                                 <button class="btn btn-success w-100 mt-3 mb-2" type="submit"
-                                    id="checkout-button">Tiền mặt</button>
+                                    id="checkout-button">Bán hàng</button>
                             </div>
                         </form>
-                        <form action="">
-                            <button class="btn btn-primary w-100 mt-3 mb-2" id="checkout-button">QR code</button>
-                        </form>
+                        
                     </div>
                 </div>
             </div>
@@ -261,8 +308,9 @@
                             <th>#</th>
                             <th>Tên khách hàng</th>
                             <th>Tổng tiền</th>
-                            <th>Thời gian tạo</th>
+                            <th>Người bán</th>
                             <th>Loại đơn thuốc</th>
+                            <th>Thời gian bán</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -302,8 +350,13 @@
 
             medicineIds.forEach(medicineId => {
                 let product = products.find(product => product.id === medicineId);
-
+                
                 if (!product) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: `Không tìm thấy thuốc do thuốc đã hết số lượng hoặc hết hạn trong kho.`,
+                    });
                     console.warn(`Không tìm thấy thông tin thuốc với ID: ${medicineId}`);
                     return;
                 }
@@ -506,10 +559,18 @@
                 let stock = cartItem.batches.find(batch => batch.price_in_smallest_unit === price)?.quantity || 0;
 
                 if (quantity < 1) {
-                    alert("Số lượng không thể nhỏ hơn 1.");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Số lượng không thể nhỏ hơn 1.'
+                    });
                     cartItem.quantity = 1;
                 } else if (quantity > stock) {
-                    alert("Số lượng không được vượt quá tồn kho!");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Số lượng không được vượt quá tồn kho!'
+                    });
                     cartItem.quantity = stock;
                 } else {
                     cartItem.quantity = parseInt(quantity);
@@ -540,7 +601,11 @@
 
             if (remainingBatches.length === 0) {
                 // Nếu không còn lô nào, thông báo cho người dùng
-                alert("Hết lô hàng! Không thể thêm sản phẩm này vào giỏ.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hết lô hàng!',
+                    text: 'Không thể thêm sản phẩm này vào giỏ.',
+                });
                 return;
             }
 
@@ -577,7 +642,11 @@
                 if (cartItem.quantity < stock) {
                     cartItem.quantity++;
                 } else {
-                    alert("Số lượng không được vượt quá tồn kho!");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Số lượng không được vượt quá tồn kho!',
+                    });
                 }
                 renderCart();
             }
@@ -783,10 +852,18 @@
                 let stock = cartItem.batches.find(batch => batch.price_in_smallest_unit === price)?.quantity || 0;
 
                 if (quantity < 1) {
-                    alert("Số lượng không thể nhỏ hơn 1.");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Số lượng không thể nhỏ hơn 1.',
+                    });
                     cartItem.quantity = 1;
                 } else if (quantity > stock) {
-                    alert("Số lượng không được vượt quá tồn kho!");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Số lượng không được vượt quá tồn kho!',
+                    });
                     cartItem.quantity = stock;
                 } else {
                     cartItem.quantity = parseInt(quantity);
@@ -816,7 +893,11 @@
 
             if (remainingBatches.length === 0) {
                 // Nếu không còn lô nào, thông báo cho người dùng
-                alert("Hết lô hàng! Không thể thêm sản phẩm này vào giỏ.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hết lô hàng!',
+                    text: 'Không thể thêm sản phẩm này vào giỏ.',
+                });
                 return;
             }
 
@@ -843,7 +924,11 @@
                 if (cartItem.quantity < stock) {
                     cartItem.quantity++;
                 } else {
-                    alert("Số lượng không được vượt quá tồn kho!");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Số lượng không được vượt quá tồn kho!',
+                    });
                 }
                 renderDoseCart();
             }
@@ -920,8 +1005,9 @@
                         <td>${index + 1}</td>
                         <td>${invoice.customer_name || 'N/A'}</td>
                         <td>${invoice.total_price ? invoice.total_price.toLocaleString() + '₫' : '0₫'}</td>
-                        <td>${formatDate(invoice.created_at)}</td>
+                        <td>${invoice.seller || 'N/A'}</td>
                         <td>${invoice.type || ''}</td>
+                        <td>${formatDate(invoice.created_at)}</td>
                     </tr>
                 `;
                 tableBody.insertAdjacentHTML('beforeend', row);

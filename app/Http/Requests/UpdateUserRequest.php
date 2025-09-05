@@ -23,49 +23,74 @@ class UpdateUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $id = $this->route('user'); // Hoặc thay đổi 'user' thành tên route parameter mà bạn đã định nghĩa
+        $id = $this->route('user');
         return [
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|regex:/^[0-9]{10}$/|unique:users,phone,' . $id,
-            'address' => 'nullable|string',
-            'birth' => 'nullable|date_format:Y-m-d',
-            'image' => 'nullable|image|max:2048',
-            'description' => 'nullable|string',
-            'email' => 'required|email|unique:users,email,' . $this->route('user'),
-            'type' => [
+            'phone' => [
                 'required',
-                Rule::in([User::TYPE_ADMIN, User::TYPE_STAFF]),
+                'regex:/^(0(2\d{8,9}|3\d{8}|5\d{8}|7\d{8}|8\d{8}|9\d{8}))$/',
+                'numeric',
+                Rule::unique('users', 'phone')->whereNull('deleted_at')->ignore($id),   
+            ],
+           'email' => [
+            'required',
+            'email',
+            'regex:/^[a-z][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/',
+            'min:5',
+            'max:255',
+            Rule::unique('users', 'email')->whereNull('deleted_at')->ignore($id, 'id'),
             ],
 
+
+            'address'      => 'nullable|string|max:255',
+            'birth'        => 'nullable|date_format:Y-m-d|before_or_equal:' . now()->subYears(18)->format('Y-m-d'),
+            'image'        => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'description'  => 'nullable|string',
+            'new_password' => 'nullable|string|min:8|regex:/[A-Z]/|regex:/[a-z]/|regex:/[0-9]/|regex:/[@$!%*?&#]/|',
         ];
     }
 
     public function messages()
     {
         return [
-            'name.required' => 'Name này là bắt buộc phải được điền',
-            'name.string' => 'Name này phải là một chuỗi ký tự',
-            'name.max' => 'Name này không được vượt quá 255 ký tự.',
+            'name.required' => 'Vui lòng nhập tên.',
+            'name.string' => 'Tên phải là chuỗi ký tự hợp lệ.',
+            'name.max' => 'Tên không được dài hơn 255 ký tự.',
+            
 
-            'phone.required' => 'Số điện thoại này là bắt buộc phải được điền',
-            'phone.string' => 'Số điện thoại này phải là một chuỗi ký tự',
-            'phone.regex' => 'Trường này phải là số điện thoại và nhập đủ 10 số',
-            'phone.unique' => 'Số điện thoại đã tồn tại vui lòng nhập số khác',
+            'phone.required' => 'Số điện thoại là bắt buộc.',
+            'phone.regex' => 'Số điện thoại không đúng định dạng. Vui lòng nhập số bắt đầu bằng 0 và có 10 chữ số. định dạng Sô điện thoại VN',
+            'phone.numeric' => 'Số điện thoại phải là một chuỗi số hợp lệ.',
+            'phone.unique' => 'Số điện thoại này đã được sử dụng.',
 
-            'address.string' => 'Địa chỉ này phải là một chuỗi ký tự',
-
+            
+            'address.string' => 'địa chỉ phải là chuỗi ký tự hợp lệ.',
+            'address.max' => 'địa chỉ không được vượt quá 255 ký tự.',
+            
             'birth.date_format' => 'Giá trị của trường này phải là một ngày tháng năm và ở định dạng "Y-m-d" (ví dụ: "2023-08-15")',
+            'birth.before_or_equal' => 'Phải đủ 18 tuổi',
 
             'image.image' => 'Ảnh này phải là một tệp hình ảnh (ảnh).',
+            'image.mimes' => 'Chỉ chấp nhận định dạng: jpeg, png, jpg, gif, webp.',
             'image.max' => ' Kích thước tệp hình ảnh không được vượt quá 2MB..',
 
             'description.string' => 'Ghi chú của trường này phải là một chuỗi ký tự',
 
-            'email.required' => ' Email này là bắt buộc phải được điền.',
-            'email.email' => '  Email của trường này phải là một địa chỉ email hợp lệ..',
-            'email.unique' => 'Email này phải là duy nhất trong bảng "users" (tức là không được trùng với email của người dùng khác',
+            'email.required' => 'Email là trường bắt buộc.',
+            'email.email' => 'Địa chỉ email không hợp lệ.',
+            'email.regex' => 'Email phải bắt đầu bằng chữ cái và có định dạng hợp lệ (vd: example@gmail.com).',
+            'email.min' => 'Email phải có ít nhất 5 ký tự.',
+            'email.max' => 'Email không được vượt quá 255 ký tự.',
+            'email.unique' => 'Email đã tồn tại, vui lòng chọn email khác.',
 
-            'type' => ' Type',
+            'new_password.required' => 'Mật khẩu là bắt buộc.',
+            'new_password.string' => 'Mật khẩu phải là một chuỗi ký tự.',
+            'new_password.min' => 'Mật khẩu phải chứa ít nhất 8 ký tự.',
+            'new_password.regex' => 'Mật khẩu phải đáp ứng các yêu cầu sau: 
+            - Ít nhất một chữ cái viết hoa (A-Z). 
+            - Ít nhất một chữ cái viết thường (a-z). 
+            - Ít nhất một chữ số (0-9). 
+            - Ít nhất một ký tự đặc biệt (@, $, !, %, *, ?, &, #).',
         ];
     }
 }

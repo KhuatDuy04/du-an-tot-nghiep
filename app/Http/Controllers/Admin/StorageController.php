@@ -18,7 +18,14 @@ class StorageController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $query = Storage::query()->withCount('medicines')->latest('id'); // Thêm withCount để đếm số lượng thuốc
+            $query = Storage::query()
+                ->select('storages.*')
+                ->selectSub(function ($query) {
+                    $query->from('batches')
+                        ->selectRaw('COUNT(DISTINCT medicine_id)')
+                        ->whereColumn('batches.storage_id', 'storages.id');
+                }, 'medicines_count')
+                ->latest('id');
 
             // Lọc theo ngày tháng nếu có
             if (request()->has('startDate') && request()->has('endDate')) {
@@ -36,8 +43,10 @@ class StorageController extends Controller
             return DataTables::of($query)
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
+                    $viewUrl = route('admin.storage.show', $row->id);
                     $deleteUrl = route('admin.storage.destroy', $row->id);
                     return '
+                    <a href="' . $viewUrl . '" class="btn btn-info view-btn">Xem</a>
                     <button class="btn btn-warning edit-btn" 
                             data-id="' . $row->id . '" 
                             data-name="' . $row->name . '" 
@@ -58,9 +67,14 @@ class StorageController extends Controller
                 ->make(true);
         }
 
-        $totalMedicines = Storage::with('batches')->get()->sum(function ($storage) {
-            return $storage->batches->sum('quantity');
-        });
+        $totalMedicines = Storage::query()
+            ->select('storages.*')
+            ->selectSub(function ($query) {
+                $query->from('batches')
+                    ->selectRaw('COUNT(DISTINCT medicine_id)')
+                    ->whereColumn('batches.storage_id', 'storages.id');
+            }, 'medicines_count')
+            ->latest('id');
 
         // Nếu không phải yêu cầu AJAX, trả về view
         $data = Storage::query()->latest('id')->paginate(5);
@@ -99,12 +113,26 @@ class StorageController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        $storage = Storage::with('medicines')->findOrFail($id);
+        // Lấy thông tin kho theo ID
+        $storage = Storage::with('batches.medicine', 'batches.inventory.unit')->findOrFail($id);
 
-        return view('admin.storage.show', compact('storage'));
+        // Lấy danh sách thuốc liên quan đến các lô trong kho
+        $medicines = $storage->batches
+            ->map(function ($batch) {
+                $medicine = $batch->medicine;
+                if ($medicine) {
+                    $medicine->batch_info = $batch;
+                    $medicine->inventory_info = $batch->inventory;
+                }
+                return $medicine;
+            })
+            ->filter(); // Loại bỏ null trong trường hợp không có thuốc liên quan
+
+        return view('admin.storage.show', compact('storage', 'medicines'));
     }
+
 
     /**
      * Show the form for editing the specified resource.
@@ -140,12 +168,22 @@ class StorageController extends Controller
      */
     public function destroy(string $id)
     {
+        // Tìm model Storage theo ID
         $model = Storage::query()->findOrFail($id);
 
+        $hasMedicines = $model->batches()->whereHas('medicine')->exists();
+
+        if ($hasMedicines) {
+            return back()->with('error', 'Không thể xóa vì trong kho vẫn còn thuốc.');
+        }
+
+        // Nếu không có thuốc tiến hành xóa
         $model->delete();
 
-        return back()->with('success', 'Xóa Thành công');
+        return back()->with('success', 'Xóa thành công');
     }
+
+
 
     public function getRestore()
     {

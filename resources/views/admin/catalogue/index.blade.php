@@ -166,7 +166,7 @@
                             <div class="card">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-end">
-                                    <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal"
+                                    <button type="button" class="btn btn-primary mb-3 d-none" data-bs-toggle="modal"
                                         data-bs-target="#exampleModal">
                                         Lọc
                                     </button>
@@ -372,4 +372,3 @@
         });
     </script>
 @endsection
-

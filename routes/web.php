@@ -94,9 +94,11 @@ Route::prefix('admin')
                     Route::delete('/delete','deleteMultiple')->name('deleteMultiple');
                 });
 
+                Route::resource('users', UserController::class);
             });
             
-        Route::resource('users', UserController::class);
+            Route::get('profile/{id}', [UserController::class, 'profile'])->name('profile');
+            Route::put('profile/{id}', [UserController::class, 'updateProfile'])->name('updateProfile');
             
         Route::controller(EnvironmentController::class)
             ->prefix('environments')->as('environments.')
@@ -140,7 +142,7 @@ Route::prefix('admin')
 
         Route::resource('cutDoseOrders', CutDoseOrderController::class);
 
-        Route::resource('cutDosePrescriptions', CutDosePrescriptionController::class);
+        Route::resource('cutDosePrescriptions', CutDosePrescriptionController::class)->except(['edit', 'update']);
 
         Route::resource('storage', StorageController::class);
 

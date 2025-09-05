@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Mail\SendMailToUser;
 use App\Models\User;
@@ -26,8 +27,11 @@ class UserController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $query = User::query() ->where('type', 'staff')
-            ->latest('id');
+            $query = User::query()
+            ->where('type', 'staff') // Lọc chỉ lấy type là staff
+            ->where('id', '!=', auth()->id()) // Loại trừ người đang đăng nhập
+            ->latest('id'); // Sắp xếp theo id giảm dần
+
 
             // Lọc theo ngày tháng nếu có
             if (request()->has('startDate') && request()->has('endDate')) {
@@ -104,7 +108,7 @@ class UserController extends Controller
     public function store(StoreUserRequest $request)
     {
         try {
-            $data = $request->except('image');
+            $data = $request->except('image','type');
 
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
@@ -112,7 +116,7 @@ class UserController extends Controller
             } else {
                 $data['image'] = null;
             }
-
+            $data['type'] = User::TYPE_STAFF;
             User::create($data);
 
             return redirect()->route('admin.users.index')->with('success', 'Thành công');
@@ -139,8 +143,65 @@ class UserController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateUserRequest $request, string $id)
+
+    public function update(UpdateUserRequest $request, int $id)
     {
+        try {
+            $model = User::findOrFail($id);
+
+            if (Auth::user()->type === 'staff' && Auth::id() != $id) {
+                return back()->withErrors(['error' => 'Bạn không có quyền sửa tài khoản này.']);
+            }
+
+            // Lấy toàn bộ dữ liệu trừ 'image'
+            $data = $request->except(['image']);
+            // Lấy ảnh hiện tại của người dùng
+            $currentImgThumb = $model->image;
+            $currentEmail = $model->email;
+            $password = $request->new_password;
+
+            // Nếu người dùng tải lên ảnh mới
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $data['image'] = $image->store('users', 'public'); // Lưu ảnh mới
+            } else {
+                // Không thay đổi ảnh thì giữ ảnh cũ
+                $data['image'] = $currentImgThumb;
+            }
+
+            // Cập nhật dữ liệu người dùng
+            $model->update($data);
+
+            // Xóa ảnh cũ nếu có ảnh mới và ảnh cũ tồn tại
+            if ($request->hasFile('image') && $currentImgThumb && Storage::disk('public')->exists($currentImgThumb)) {
+                Storage::disk('public')->delete($currentImgThumb);
+            }
+            // Gửi email thông báo, xử lý ngoại lệ riêng cho email
+            Mail::to($currentEmail)->send(new SendMailToUser($model, $password));
+            return back()->with('success', 'Cập nhật thành công');
+        } catch (\Exception $exception) {
+            Log::error('Lỗi cập nhật tài khoản: ' . $exception->getMessage());
+            return back()->with('error', 'Cập nhật thất bại: ' . $exception->getMessage());
+        }
+    }
+
+    public function profile(int $id)
+    {
+        $user = User::findOrFail($id);
+
+        if (Auth::user()->type === 'staff' && Auth::id() != $id) {
+            return back()->withErrors(['error' => 'Bạn không có quyền sửa tài khoản này.']);
+        }
+
+        return view('admin.users.profile', compact('user'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function updateProfile(UpdateProfileRequest $request, int $id)
+    {
+        // dd($request->all());
         try {
             $model = User::findOrFail($id);
 
@@ -173,7 +234,7 @@ class UserController extends Controller
 
                 // Kiểm tra mật khẩu mới và xác nhận mật khẩu
                 $request->validate([
-                    'new_password' => 'required|min:8',
+                    'new_password' => 'required',
                     'confirm_password' => 'same:new_password',
                 ]);
 
@@ -195,7 +256,6 @@ class UserController extends Controller
             return back()->with('error', 'Cập nhật thất bại: ' . $exception->getMessage());
         }
     }
-
 
     /**
      * Remove the specified resource from storage.
